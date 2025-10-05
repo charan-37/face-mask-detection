@@ -3,7 +3,3 @@ opencv-python-headless==4.7.0.72
 # let pip resolve a compatible numpy for the Python runtime
 numpy
 Pillow==10.0.0
-# TensorFlow versions may not have wheels for newer Python (3.13) on Streamlit Cloud.
-# Request Python 3.11 via runtime.txt (see file added) so TensorFlow can install.
-tensorflow==2.14.0
-keras==2.14.0

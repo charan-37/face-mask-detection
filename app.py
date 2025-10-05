@@ -1,72 +1,85 @@
 import streamlit as st
 import cv2
 import numpy as np
-from tensorflow.keras.models import load_model
-from tensorflow.keras.preprocessing.image import img_to_array
-from tensorflow.keras import initializers
 from PIL import Image
+
+# Try to import tensorflow; if not available (on Streamlit Cloud builds),
+# run the app UI without model inference. This lets the app deploy even when
+# heavy ML packages can't be installed.
+TF_AVAILABLE = True
+try:
+    import tensorflow as tf
+    from tensorflow.keras.models import load_model
+    from tensorflow.keras.preprocessing.image import img_to_array
+    from tensorflow.keras import initializers
+except Exception:
+    TF_AVAILABLE = False
 
 st.set_page_config(page_title="Face Mask Detector", layout="wide")
 
 st.title("Face Mask Detector Demo")
 st.write("Upload an image and the app will detect faces and predict mask/no-mask.")
 
-# Initializer compatibility wrappers (same approach as GUI script)
-class GlorotUniform(initializers.GlorotUniform):
-    def __init__(self, seed=None, dtype=None):
-        super().__init__(seed=seed)
+if TF_AVAILABLE:
+    # Initializer compatibility wrappers (same approach as GUI script)
+    class GlorotUniform(initializers.GlorotUniform):
+        def __init__(self, seed=None, dtype=None):
+            super().__init__(seed=seed)
 
-class Zeros(initializers.Zeros):
-    def __init__(self, dtype=None):
-        super().__init__()
+    class Zeros(initializers.Zeros):
+        def __init__(self, dtype=None):
+            super().__init__()
 
-class Ones(initializers.Ones):
-    def __init__(self, dtype=None):
-        super().__init__()
+    class Ones(initializers.Ones):
+        def __init__(self, dtype=None):
+            super().__init__()
 
-class Constant(initializers.Constant):
-    def __init__(self, value=0.0, dtype=None):
-        super().__init__(value=value)
+    class Constant(initializers.Constant):
+        def __init__(self, value=0.0, dtype=None):
+            super().__init__(value=value)
 
-class RandomNormal(initializers.RandomNormal):
-    def __init__(self, mean=0.0, stddev=1.0, seed=None, dtype=None):
-        super().__init__(mean=mean, stddev=stddev, seed=seed)
+    class RandomNormal(initializers.RandomNormal):
+        def __init__(self, mean=0.0, stddev=1.0, seed=None, dtype=None):
+            super().__init__(mean=mean, stddev=stddev, seed=seed)
 
-class HeNormal(initializers.HeNormal):
-    def __init__(self, seed=None, dtype=None):
-        super().__init__(seed=seed)
+    class HeNormal(initializers.HeNormal):
+        def __init__(self, seed=None, dtype=None):
+            super().__init__(seed=seed)
 
-class RandomUniform(initializers.RandomUniform):
-    def __init__(self, minval=-0.05, maxval=0.05, seed=None, dtype=None):
-        super().__init__(minval=minval, maxval=maxval, seed=seed)
+    class RandomUniform(initializers.RandomUniform):
+        def __init__(self, minval=-0.05, maxval=0.05, seed=None, dtype=None):
+            super().__init__(minval=minval, maxval=maxval, seed=seed)
 
-class VarianceScaling(initializers.VarianceScaling):
-    def __init__(self, scale=1.0, mode='fan_in', distribution='truncated_normal', seed=None, dtype=None):
-        super().__init__(scale=scale, mode=mode, distribution=distribution, seed=seed)
+    class VarianceScaling(initializers.VarianceScaling):
+        def __init__(self, scale=1.0, mode='fan_in', distribution='truncated_normal', seed=None, dtype=None):
+            super().__init__(scale=scale, mode=mode, distribution=distribution, seed=seed)
 
-custom_inits = {
-    'GlorotUniform': GlorotUniform,
-    'Zeros': Zeros,
-    'Ones': Ones,
-    'Constant': Constant,
-    'RandomNormal': RandomNormal,
-    'HeNormal': HeNormal,
-    'RandomUniform': RandomUniform,
-    'VarianceScaling': VarianceScaling,
-}
+    custom_inits = {
+        'GlorotUniform': GlorotUniform,
+        'Zeros': Zeros,
+        'Ones': Ones,
+        'Constant': Constant,
+        'RandomNormal': RandomNormal,
+        'HeNormal': HeNormal,
+        'RandomUniform': RandomUniform,
+        'VarianceScaling': VarianceScaling,
+    }
 
-@st.cache_resource
-def load_mask_model(path='mask_detector_model.h5'):
-    # Load model with custom_objects to be robust across Keras versions
-    model = load_model(path, custom_objects=custom_inits)
-    return model
+    @st.cache_resource
+    def load_mask_model(path='mask_detector_model.h5'):
+        # Load model with custom_objects to be robust across Keras versions
+        model = load_model(path, custom_objects=custom_inits)
+        return model
 
-model = None
-try:
-    with st.spinner('Loading model...'):
-        model = load_mask_model()
-except Exception as e:
-    st.error(f"Failed to load model: {e}")
+    model = None
+    try:
+        with st.spinner('Loading model...'):
+            model = load_mask_model()
+    except Exception as e:
+        st.error(f"Failed to load model: {e}")
+else:
+    model = None
+    st.warning("TensorFlow is not installed in this environment. The app will deploy without model inference. Run locally to enable predictions.")
 
 face_cascade = cv2.CascadeClassifier(cv2.data.haarcascades + 'haarcascade_frontalface_default.xml')
 
